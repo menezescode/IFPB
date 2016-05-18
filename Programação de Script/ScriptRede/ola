@@ -1,0 +1,8 @@
+#interface de localhost
+auto lo
+iface lo inet loopback
+
+#interface de rede eth0
+allow-hotplug eth0
+auto eth0
+iface eth0 inet dhcp

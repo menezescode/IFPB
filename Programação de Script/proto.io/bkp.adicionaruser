@@ -1,0 +1,53 @@
+#!/bin/bash
+
+#Checar se o nome do usuário foi digitado, se não encerra o programa
+if [ -z $1 ]
+then
+	echo "Você não digitou o nome do usuario" ; exit 1
+fi
+
+#Checar se o usuário já existe
+user=`cat /etc/passwd | cut -d ':' -f 1 | grep $1`
+if test "$1" == "$user"
+then
+	echo "Usuário já existe" ; exit 1
+fi
+
+#Receber ultimo UID e adicionar 1 para o proximo user
+userID=`tail -n 1 /etc/passwd | cut -d ':' -f 3 | sort -g | tail -n 2 | head -n 1`
+userID=$((userID + 1))
+
+#Receber o ultimo groupID e adicionar 1 para o proximo user
+groupID=`tail -n 1 /etc/group | cut -d ':' -f 3`
+groupID=$((groupID + 1))
+
+#Criar diretorio com nome do usuario digitado
+echo Criando diretorio home...
+mkdir /home/$1
+
+#Adicionar os arquivos de skel para dentro do diretorio do usuario
+echo Copiando arquivos...
+cp -R /etc/skel/ /home/$1
+
+echo Adicionando configuracoes...
+#Adicionar linha referente ao novo usuario em /etc/passwd
+echo "$1:x:$userID:$groupID:$1,,,:/home/$1:/bin/bash" >> /etc/passwd
+
+#Adicionar linha referente ao novo grupo de usuario em /etc/passwd
+echo "$1:x:$groupID:" >> /etc/group
+
+#Verificar se o usuario digitou a opção para inserir senha
+#Se sim, senha deverá ser inserida
+if test "$2" == "-s"
+then
+	passwd $1
+else
+	#Caso senha nao seja inserida, o usuario nao terá senha
+	timestamp=`date +%s`
+	days=$((timestamp / 86400))
+	echo $1"::$days:0:99999:7:::" >> /etc/shadow
+fi
+
+#Atribuir propriedade a /home/$1 para o usuario criado
+chown $1: /home/$1
+

@@ -1,0 +1,2 @@
+date > /root/saida_date
+cp /root/saida_date /root/date 

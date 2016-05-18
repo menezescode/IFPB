@@ -1,0 +1,3 @@
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root       443  0.0  0.1   4224  2168 ?        SLs  10:20   0:00 /sbin/mosd
+root       656  0.0  0.1  12748  2288 tty1     S+   10:43   0:00 grep --color=auto --exclude-dir=.bzr --exclude-dir=CVS --exclude-dir=.git --exclude-dir=.hg --exclude-dir=.svn mosd

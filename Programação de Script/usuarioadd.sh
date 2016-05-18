@@ -1,0 +1,276 @@
+#!/bin/bash
+
+#TODO Finalizar bug do grupo
+
+if [ -z $1 ] #Checar se o nome do usuário foi digitado, se não encerra o programa
+then
+	echo "Você não digitou o nome do usuario" ; exit 1
+elif [[ "${1//[A-Za-z]/}" = "" ]] #Checar se o nome do usuário contem apenas letras
+then
+	testarUser=`cat /etc/passwd | cut -d ':' -f 1 | grep $1` #Checar se o usuário já existe
+	if test "$1" == "$testarUser"
+	then
+		echo "Usuário já existe" ; exit 1
+	fi
+else
+	echo "O usuario digitado não é válido" ; exit 1
+fi
+
+user=$1 #Atribuir variável user para o arg 1
+
+while [[ $# > 0 ]]
+do
+key="$2"
+case $key in
+
+	-g| --group) #Recebe o nome do grupo
+	if test "$groupFlag" != "true" #groupFlag garante que o arg só será usado uma vez
+	then
+		if [ -z $3 ] #Testa se arg do nome do grupo está vazio
+		then
+			echo "Você não digitou o nome do grupo" ; exit 1		
+		else	
+			grupoTeste=`cat /etc/group | cut -d ':' -f 1 | grep $grupo`				
+			if [[ "${3//[A-Za-z0-9]/}" = "" ]] #Testa se nome do grupo tem apenas letras e números
+			then	
+				if test "$3" == "$grupoTeste" 
+				then
+					echo "O nome do grupo já existe, tente novamente..." ; exit 1
+				else
+					grupo=$3
+					groupFlag="true"
+				fi
+			else
+				echo "O nome do grupo digitádo é inválido" ; exit 1
+			fi
+		fi	
+	else
+		echo "Você digitou o mesmo argumento mais de uma vez" ; exit 1
+	fi	
+	shift
+	;;
+	
+	-gid| --group-id) #Recebe o id do grupo
+	if test "$gidFlag" != "true" #gidFlag garante que o arg só será usado uma vez
+	then
+		if [ -z $3 ] #Testa se arg de GID está vazio
+		then
+			echo "Você não digitou o GID" ; exit 1		
+		else
+			if [[ "${3//[0-9]/}" = "" ]] #Testa se GID contém apenas números
+			then	
+				gid=$3
+				gidFlag="true"
+			else
+				echo "O GID digitádo é inválido" ; exit 1
+			fi		
+		fi
+	else
+		echo "Você digitou o mesmo argumento mais de uma vez" ; exit 1
+	fi
+	shift
+	;;
+
+	-d| --home-dir) #Recebe o homedir
+	if test "$homeDirFlag" != "true" #homeDirFlag garante que o arg só será usado uma vez
+	then		
+		if [ -z $3 ] #Testa se arg de dir está vazio
+		then
+			echo "Você não digitou o diretório" ; exit 1		
+		else		
+			if [ -d $3 ]
+			then
+				echo "Este diretório já existe" ; exit 1
+			else	
+				dirTeste=`echo $3 | cut -b -6`			
+				if test "$dirTeste" == "/home/"
+				then
+					dir=$3
+					homeDirFlag="true"
+				else
+					echo "Este diretório é inválido" ; exit 1				
+				fi
+			fi			
+		fi
+	else
+		echo "Você digitou o mesmo argumento mais de uma vez" ; exit 1	
+	fi	
+	shift
+	;;
+
+	-k| --senha)
+	if test "$senhaFlag" != "true" #senhaFlag garante que o arg só sera usado uma vez
+	then
+		senha=$3		
+		senhaFlag="true"
+	else
+		echo "Você digitou o mesmo argumento mais de uma vez" ; exit 1
+	fi
+	shift
+	;;
+
+	-s| --shell)
+	if test "$shellFlag" != "true" #shellFlag garante que o arg só sera usado uma vez
+	then	
+		shell=$3
+		shellFlag="true"
+	else
+		echo "Você digitou o mesmo argumento mais de uma vez" ; exit 1
+	fi
+	shift
+	;;
+
+	-uid| --user-id)
+	if test "$uidFlag" != "true" #uidFlag garante que o arg só sera usado uma vez
+	then
+		if [ -z $3 ] #Testa se arg de UID está vazio
+		then
+			echo "Você não digitou o UID" ; exit 1		
+		else
+			if [[ "${3//[0-9]/}" = "" ]] #Testa se UID tem apenas números
+			then	
+				uid=$3
+				uidFlag="true"
+			else
+				echo "O UID digitádo é inválido" ; exit 1
+			fi		
+		fi
+	else
+		echo "Você digitou o mesmo argumento mais de uma vez" ; exit 1
+	fi
+	shift
+	;;
+	
+	*)
+	if [ -z $2 ]
+	then
+		break		
+	else
+		echo "Argumento inexistente, o programa será encerrado..." ; exit 1	
+	fi	
+	;;
+esac
+shift
+done
+
+echo "-----------------------------------"
+echo "Informações Digitadas:"
+echo "Usuário: $user"
+echo "Uid: $uid"
+echo "Grupo: $grupo"
+echo "Gid: $gid"
+echo "Homedir: $dir"
+echo "Senha: $senha"
+echo "Shell: $shell"
+echo "-----------------------------------"
+echo "Informações auto-preenchidas:"
+
+if [ -z $uid ] #Testar se o UID está vazio
+then 
+	#Se sim, receber ultimo UID e adicionar 1 para o proximo user
+	uid=`cat /etc/passwd | cut -d ':' -f 3 | sort -g | tail -n 2 | head -n 1`
+	uid=$((uid + 1))
+	echo "Uid automatico: $uid"
+else
+	uidTeste=`cat /etc/passwd | cut -d ':' -f 3 | grep $uid | head -1` #Checar se o uid já existe
+	if test "$uid" == "$uidTeste"
+	then
+		echo "O UID digitado já existe, tente novamente..." ; exit 1
+	fi	
+fi
+
+if [ -z $gid ] #Testar se o GID está vazio
+then 
+	#Se estiver vazio, receber ultimo GID e adicionar 1 para o proximo grupo
+	gid=`cat /etc/group | cut -d ':' -f 3 | sort -g | tail -n 2 | head -n 1`
+	gid=$((gid + 1))
+	echo "Gid automatico: $gid"
+else
+	gidTeste=`cat /etc/group | cut -d ':' -f 3 | grep $gid | head -1`
+	if test "$gid" == "$gidTeste"
+	then
+		echo "O GID digitado já existe, tente novamente..." ; exit 1
+	fi
+fi
+
+if [ -z $grupo ] #Testar se grupo está vazio
+then
+	#Se estiver vazio, grupo recebe o nome do user
+	grupo=$user
+	grupoTeste=`cat /etc/group | cut -d ':' -f 1 | grep $grupo`	
+	if test "$grupo" == "$grupoTeste" 
+	then
+		echo "O nome do grupo já existe, tente novamente..." ; exit 1
+	else
+		echo "Grupo automatico: $grupo"
+	fi
+fi
+
+if [ -z $dir ] #Testar se dir está vazio
+then
+	dir="/home/$user"
+	if [ -d $dir ]
+	then
+		echo "Este diretório já existe" ; exit 1
+	else	
+		echo "Dir automatico: $dir"
+	fi
+fi
+
+if [ -z $shell ] #Testar se shell está vazio
+then
+	shell="/bin/bash"
+	echo "Shell automatico: $shell"
+fi
+
+if [ -z $senha ] #Testar se a senha está vazia
+then
+	#Caso senha nao seja inserida, o usuario terá senha = user
+	timestamp=`date +%s`
+	days=$((timestamp / 86400))
+	senha="$user"
+	echo "Senha: $senha"
+fi
+
+echo "-----------------------------------"
+echo "Informações Finais:"
+echo "Usuário: $user"
+echo "Uid: $uid"
+echo "Grupo: $grupo"
+echo "Gid: $gid"
+echo "Homedir: $dir"
+echo "Senha: $senha"
+echo "Shell: $shell"
+echo "-----------------------------------"
+
+#Criar diretório do usuário
+echo "Criando diretório..."
+mkdir $dir
+
+#Adicionar os arquivos de skel para dentro do diretorio do usuario
+echo "Copiando arquivos..."
+cp -R /etc/skel/. $dir
+
+#Adicionar linha referente ao novo usuario em /etc/passwd
+echo "Adicionando configuracoes de usuário..."
+echo "$user:x:$uid:$gid:$user,,,:$dir:$shell" >> /etc/passwd
+
+#Adicionar linha referente ao novo grupo de usuario em /etc/passwd
+echo "Adicionando configurações de grupo..."
+echo "$grupo:x:$gid:" >> /etc/group
+
+echo "Adicionando configurações de senha..."
+#Testa se a senha foi nula
+if test "$senha" == "$user"
+then
+	echo "Senha padrão foi utilizada, senha = user"
+fi
+
+#Usa o comando chpasswd para criar o password
+echo "$user:$senha" | chpasswd 
+
+#Atribuir propriedade a /home/$1 para o usuario criado
+echo "Adicionando configurações de propriedade..."
+chown $user: $dir
+
+echo "Usuário adicionado com sucesso."

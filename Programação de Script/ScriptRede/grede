@@ -1,0 +1,156 @@
+#!/bin/bash
+
+function menu(){
+#Printa menu na tela
+echo "Gerência da Rede"
+echo "1 - Informações das Interfaces de Rede"
+echo "2 - Configurar o IP e a Máscara de forma temporária"
+echo "3 - Habilitar Interface de Rede"
+echo "4 - Desabilitar Interface de Rede"
+echo "5 - Configurar as configurações de rede de forma permanente"
+echo "6 - Obter IP via DHCP"
+echo "7 - Tabela de Rotas"
+echo "8 - Adicionar Gateway"
+echo "9 - Deletgar Gateway"
+echo "10 - Sair"
+echo ""
+
+while true
+do
+printf "Digite sua opção: "
+read op
+	case $op in
+		1) infoInterfacesRede
+		;;
+		2) configIpMascaraTemporario
+		;;
+		3) habilitarInterfaceRede
+		;;
+		4) desabilitarInterfaceRede
+		;;
+		5) configurarRedePermanentemente
+		;;
+		6) obterIpDHCP
+		;;
+		7) tabelaDeRotas
+		;;
+		8) AdicionarGateway
+		;;
+		9) DeletarGateway
+		;;
+		10) exit 1
+		;;
+		11) menu
+		;;		
+		*) echo "Opção inválida." ;;
+	esac
+done
+}
+
+function infoInterfacesRede(){
+echo "Listando informações das Interfaces de Rede:"
+ifconfig -a
+}
+
+function configIpMascaraTemporario(){
+echo "Configurar o IP e a Máscara de forma temporária:"
+printf "Digite o nome da interface de rede: "
+read interface
+printf "Digite o IP: "
+read ip
+printf "Digite a mascara: "
+read mascara
+ifconfig $interface $ip netmask $mascara up
+}
+
+function habilitarInterfaceRede(){
+echo "Habilitar Interface de Rede: "
+printf "Digite o nome da interface de rede a ser habilitada: "
+read interface
+ifup $interface
+}
+
+function desabilitarInterfaceRede(){
+echo "Desabilitar Interface de Rede: "
+printf "Digite o nome da interface de rede a ser desabilitada: "
+read interface
+ifdown $interface
+}
+
+function configurarRedePermanentemente(){
+echo "Configurar rede permanentemente: "
+
+#Criar uma copia backup
+cp /etc/network/interfaces /etc/network/interfaces.bkp
+
+#Receber dados
+printf "Digite o IP: "
+read ip
+printf "Digite o IP da rede: "
+read netIp
+printf "Digite a mascara: "
+read mascara
+printf "Digite o gateway: "
+read gateway
+
+#Escrever no arquivo as informações permanentes
+cat > /etc/network/interfaces << FIM
+#Interface de localhost
+auto lo
+iface lo inet loopback
+
+#Interface de rede eth0
+allow-hotplug eth0
+auto eth0
+
+iface eth0 inet static
+address $ip
+network $netIp
+netmask $mascara
+gateway $gateway
+FIM
+
+#Reiniciar serviços de rede
+/etc/init.d/networking restart
+}
+
+function obterIpDHCP(){
+echo "Obter IP via DHCP:"
+
+#Criar uma copia backup
+cp /etc/network/interfaces /etc/network/interfaces.bkp
+
+#Modificar o arquivo para DHCP
+cat > /etc/network/interfaces << FIM
+#Interface localhost
+auto lo eth0
+iface lo inet loopback
+
+#Interface DHCP
+auto eth0
+allow-hotplug eth0
+iface eth0 inet dhcp
+FIM
+
+#Reiniciar serviços de rede
+/etc/init.d/networking restart
+}
+
+function tabelaDeRotas(){
+echo "Tabela de Rotas:"
+route -n
+}
+
+function adicionarGateway(){
+echo "Adicionar Gateway:"
+printf "Digite o IP do gateway: "
+read ip
+route add default gw $ip
+} 	
+
+function deletarGateway(){
+echo "Deletar Gateway:"
+route del default
+}
+
+menu
